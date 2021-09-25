@@ -23,3 +23,6 @@ The overall sequence of steps can be found in the `BT_workflow` file.
 
 No. Each serve is modeled as a separate point, with an appropriate offset estimated for the serving team. Essentially, even if two teams win 3-0, the team that serves better and sideouts better will be rewarded more.
 
+2. Why does Texas A&M-Corpus Christi have a raw rating of 0?
+
+The Bradley-Terry model, like any regression model that includes categorical variables, requires a reference level that does not appear in the model. In the Bradley-Terry model, the rating for the reference level is hard-coded to 0. The BradleyTerry2 package, by default, uses the first level as the reference level. In the dataset, this corresponds to the team that comes first alphabetically according to the NCAA website team names, which happens to be "A&M-Corpus Christi."
