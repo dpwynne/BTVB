@@ -29,7 +29,7 @@ I don't know. Part of the reason we're releasing the rankings is to figure out h
 
 3. So what's the difference between this and the Pablo rankings?
 
-Pablo, as far as I can tell, uses an inverse normal transformation of point percentage. We use an inverse logit transformation of sideout percentage. (For stats nerds, it's the difference between probit and logistic regression.) We also use the [volleysim](https://github.com/openvolley/volleysim) package to estimate our win probabilities directly.
+Pablo, as far as I can tell, uses an inverse normal transformation of point percentage. We use an inverse logit transformation of sideout percentage. (For stats nerds, it's the difference between probit and logistic regression.) We also use the [volleysim](https://openvolley.github.io/volleysim/) package to estimate our win probabilities directly.
 
 4. Does this just work on wins/losses?
 
