@@ -61,4 +61,4 @@ The Bradley-Terry model, like any regression model that includes categorical var
 
 11. Are you planning to do anything more with the ratings?
 
-Yes. First, if they suck, we're going to tweak the model to suck less, but we'll probably do that after the season when (1) we have an entire season's worth of data to use for model validation and (2) I can see how far back the NCAA play-by-play data goes. Second, even if they don't suck, I want to see what a Bayesian version that uses preseason ranking information would look like.
+Yes. First, if they suck, we're going to tweak the model to suck less, but we'll probably do that after the season when (1) we have an entire season's worth of data to use for model validation and (2) I have time to explore how far back the NCAA play-by-play data goes. Second, even if they don't suck, I want to develop a couple of modified versions to compare: one that uses separate serve and reception ratings, and one that incorporates preseason rankings via a weakly informative (Bayesian) prior.
