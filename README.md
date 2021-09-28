@@ -55,13 +55,13 @@ There could be several reasons for this. First, it could have been a genuine ups
 
 Not at the moment. There are a few extensions of paired rating systems that can do this, but I still need to look into their properties and assumptions. The basic Bradley-Terry model has been around a long time for a reason; the only real questions are whether the model assumptions are met and whether the model is properly calibrated.
 
-10. Are you going to do this for Division I/Division II/NAIA?
+10. Are you going to do this for Division II/Division III/NAIA?
 
 Not at this time. If *you* want to do it for Division II or Division III, the code for you to do it is literally right here. All you need to do is change the conferences at the top of the workflow.
 
 11. Are you going to do this for men's volleyball/international vollebyall/etc.?
 
-In theory, if we had play-by-play data, we could do this for any level. I'm pretty sure the NCAA website has play-by-play data to do it for men's, but I haven't looked at anything else yet.
+In theory, if we had play-by-play data, we could do this for any level of indoor volleyball. I'm pretty sure the NCAA website has play-by-play data to do it for men's, but I haven't looked at anything else yet.
 
 12. Are you going to do this for beach volleyball?
 
