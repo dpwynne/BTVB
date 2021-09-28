@@ -55,10 +55,22 @@ There could be several reasons for this. First, it could have been a genuine ups
 
 Not at the moment. There are a few extensions of paired rating systems that can do this, but I still need to look into their properties and assumptions. The basic Bradley-Terry model has been around a long time for a reason; the only real questions are whether the model assumptions are met and whether the model is properly calibrated.
 
-10. Why does Texas A&M-Corpus Christi have a raw rating of 0?
+10. Are you going to do this for Division I/Division II/NAIA?
+
+Not at this time. If *you* want to do it for Division II or Division III, the code for you to do it is literally right here. All you need to do is change the conferences at the top of the workflow.
+
+11. Are you going to do this for men's volleyball/international vollebyall/etc.?
+
+In theory, if we had play-by-play data, we could do this for any level. I'm pretty sure the NCAA website has play-by-play data to do it for men's, but I haven't looked at anything else yet.
+
+12. Are you going to do this for beach volleyball?
+
+Not until a couple of obstacles are solved. The easy obstacle to overcome is fixing the volleysim package to work with the beach format, assuming no wind advantage. The more difficult obstacle to overcome is the lack of play-by-play data, especially for NCAA Women's Beach Volleyball where the match-end condition is not consistent (sometimes they play all 5 games, sometimes they only play until someone wins 3).
+
+13. Why does Texas A&M-Corpus Christi have a raw rating of 0?
 
 The Bradley-Terry model, like any regression model that includes categorical variables, requires a reference level that does not appear in the model. In the Bradley-Terry model, the rating for the reference level is hard-coded to 0. The BradleyTerry2 package, by default, uses the first level as the reference level. In the dataset, this corresponds to the team that comes first alphabetically according to the NCAA website team names, which happens to be "A&M-Corpus Christi."
 
-11. Are you planning to do anything more with the ratings?
+14. Are you planning to do anything more with the ratings?
 
 Yes. First, if they suck, we're going to tweak the model to suck less, but we'll probably do that after the season when (1) we have an entire season's worth of data to use for model validation and (2) I have time to explore how far back the NCAA play-by-play data goes. Second, even if they don't suck, I want to develop a couple of modified versions to compare: one that uses separate serve and reception ratings, and one that incorporates preseason rankings via a weakly informative (Bayesian) prior.
