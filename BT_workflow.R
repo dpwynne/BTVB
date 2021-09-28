@@ -52,6 +52,15 @@ NCAA_all_games2 <- NCAA_all_games %>% mutate(
   location = str_replace(location, "\\\\u0026", "&"),
 )
 
+# this code is optional
+# if you only want games in a certain range (e.g., you're just updating a database or want regular season only),
+# then run this code and replace "NCAA_all_games" with "NCAA_new_games" in the code afterwards
+library(lubridate)
+last_sunday_date <- "2021-09-19"
+sunday_date <- "2021-09-26"
+NCAA_new_games <- NCAA_all_games %>% filter(date > ymd(last_sunday_date), date <= ymd(sunday_date))
+
+
 # Now we get the box score and play-by-play links
 pbp_box_urls <- map_df(NCAA_all_games$url, pbp_boxscore_links)
 NCAA_game_pbp <- bind_cols(NCAA_all_games, pbp_box_urls) %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
