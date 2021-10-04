@@ -4,6 +4,7 @@
 fix_NCAA_names <- function(x){
   case_when(x == "Americanan" ~ "American",
             x == "N.C. AT" ~ "N.C. A&T",
+            str_detect(x, "Alabama AM") ~ "Alabama A&M",
             str_detect(x, "Texas AM") ~ "Texas A&M",
             x == "LMU (CA) (CA)" | x == "LMU" ~ "LMU (CA)",
             x == "Binghamtonmton" ~ "Binghamton",
