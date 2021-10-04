@@ -93,21 +93,21 @@ clean_vb_box_score <- function(box_score_table){
   names(players_stats) <- box_score_table[2,]
   players_stats$team <- box_score_table[1,1]
   players_stats <- players_stats %>%
-    mutate(S = as.numeric(str_remove(S, "\/")),  # I think the forward slash indicates some kind of season high? 
-           Kills = as.numeric(str_remove(Kills, "\/")),
-           Errors = as.numeric(str_remove(Errors, "\/")),
-           `Total Attacks` = as.numeric(str_remove(`Total Attacks`, "\/")),
-           `Hit Pct` = as.numeric(str_remove(`Hit Pct`, "\/")),
-           Assists = as.numeric(str_remove(Assists, "\/")),
-           Aces = as.numeric(str_remove(Aces, "\/")),
-           SErr = as.numeric(str_remove(SErr, "\/")),
-           Digs = as.numeric(str_remove(Digs, "\/")),
-           RErr = as.numeric(str_remove(RErr, "\/")),
-           `Block Solos` = as.numeric(str_remove(`Block Solos`, "\/")),
-           `Block Assists` = as.numeric(str_remove(`Block Assists`, "\/")),
-           BErr = as.numeric(str_remove(BErr, "\/")),
-           PTS = as.numeric(str_remove(PTS, "\/")),
-           BHE = as.numeric(str_remove(BHE, "\/"))
+    mutate(S = as.numeric(str_remove(S, "/")),  # I think the forward slash indicates some kind of season high? 
+           Kills = as.numeric(str_remove(Kills, "/")),
+           Errors = as.numeric(str_remove(Errors, "/")),
+           `Total Attacks` = as.numeric(str_remove(`Total Attacks`, "/")),
+           `Hit Pct` = as.numeric(str_remove(`Hit Pct`, "/")),
+           Assists = as.numeric(str_remove(Assists, "/")),
+           Aces = as.numeric(str_remove(Aces, "/")),
+           SErr = as.numeric(str_remove(SErr, "/")),
+           Digs = as.numeric(str_remove(Digs, "/")),
+           RErr = as.numeric(str_remove(RErr, "/")),
+           `Block Solos` = as.numeric(str_remove(`Block Solos`, "/")),
+           `Block Assists` = as.numeric(str_remove(`Block Assists`, "/")),
+           BErr = as.numeric(str_remove(BErr, "/")),
+           PTS = as.numeric(str_remove(PTS, "/")),
+           BHE = as.numeric(str_remove(BHE, "/"))
     ) %>%
     replace_na(list(Kills = 0,
                     Errors = 0,
