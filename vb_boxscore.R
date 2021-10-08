@@ -18,7 +18,7 @@ vb_boxscore <- function(box_score_url){
   }
   
   game_date <- (game_html %>% html_nodes("table:nth-child(1)") %>% html_table())[[1]][1,2] %>% 
-    lubridate::parse_date_time(orders = "mdYHMp")
+    lubridate::parse_date_time(orders = c("mdYHMp", "mdY"))
   if(length(game_html %>% html_nodes(".errors")) > 0){
     game_teams_scores <- (game_html %>% html_nodes("table:nth-child(6)") %>% html_table())[[1]]
   } else{
