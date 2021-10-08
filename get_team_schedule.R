@@ -77,17 +77,17 @@ get_team_schedule <- function(team_name, team_id, sport, year){
       games_table <- (games_table_table %>% html_table())[[1]][games_with_links - 1,]
       
       # Extract information about each game
-      games_date <- games_table[,1]
+      games_date <- games_table[[1]]
       games_home <- case_when(
-        str_detect(games_table[,2], "^\\@") ~ str_remove(games_table[,2], "\\@ "),
-        str_detect(games_table[,2], ".+\\@")~ str_remove(games_table[,2], "\\@.+") %>% str_trim(),
+        str_detect(games_table[[2]], "^\\@") ~ str_remove(games_table[[2]], "\\@ "),
+        str_detect(games_table[[2]], ".+\\@")~ str_remove(games_table[[2]], "\\@.+") %>% str_trim(),
         TRUE ~ team_name)
-      games_away <- if_else(str_detect(games_table[,2], "@"), team_name, games_table[,2])
+      games_away <- if_else(str_detect(games_table[[2]], "@"), team_name, games_table[[2]])
       
       # The tricky part is to use regex to get the correct location for away and neutral games
       games_location <- case_when(
-        str_detect(games_table[,2], "\\@(?=[^ ])") ~ str_extract(games_table[,2], "\\@(?=[^ ]).*") %>% str_remove("\\@"),
-        str_detect(games_table[,2], "\\@") ~ str_extract(games_table[,2], "\\@.*$") %>% str_remove("\\@") %>% str_trim(),
+        str_detect(games_table[[2]], "\\@(?=[^ ])") ~ str_extract(games_table[[2]], "\\@(?=[^ ]).*") %>% str_remove("\\@"),
+        str_detect(games_table[[2]], "\\@") ~ str_extract(games_table[[2]], "\\@.*$") %>% str_remove("\\@") %>% str_trim(),
         TRUE ~ team_name
       )
     }
