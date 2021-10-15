@@ -185,9 +185,8 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
         Date = lubridate::parse_date_time(Date, orders = c("m/d/Y H:M p", "m/d/Y", "m/d/Y(H)"))
         )
       
-      ## Attendance gives some warnings, need to figure this out
       games_df <- games_df %>% mutate(Team = team_name,
-                                      Attendance = if_else(is.na(as.numeric(Attendance)), NA_real_, as.numeric(Attendance))) %>% 
+                                      Attendance = if_else(is.na(as.numeric(str_remove(Attendance, ","))), NA_real_, as.numeric(str_remove(Attendance, ",")))) %>% 
         select(Date, Team, Opponent, Result, Attendance, Location)
       
     }
