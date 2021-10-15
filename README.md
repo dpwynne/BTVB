@@ -15,7 +15,7 @@ Obtaining the data requires five steps:
 
 We then summarize the data, run the Bradley-Terry model to rank the teams and obtain the appropriate adjustments for serving and home-court, and scale the ratings to have mean 1500 and standard deviation 500.
 
-The overall sequence of steps can be found in the `BT_workflow` file.
+You should be able to run everything from obtaining the data to making new game predictions by running the code in the `full_workflow` file.
 
 ## Frequently Anticipated Questions
 
@@ -29,7 +29,9 @@ I don't know. Part of the reason we're releasing the rankings is to figure out h
 
 3. So what's the difference between this and the Pablo rankings?
 
-Pablo, as far as I can tell, uses an inverse normal transformation of point percentage. We use an inverse logit transformation of sideout percentage. (For stats nerds, it's the difference between probit and logistic regression.) We also use the [volleysim](https://openvolley.github.io/volleysim/) package to estimate our win probabilities directly.
+There are some minor mathematical differences (Pablo, as far as I can tell, uses an inverse normal transformation of point percentage. We use an inverse logit transformation of sideout percentage).
+
+The big conceptual difference is that while Pablo directly predicts the probability that a team wins a match, we attempt to predict that the probability that a team *scores a point* (i.e., predict the point-scoring percentage and sideout percentage for each team). We then feed those predicted sideout percentages into the [volleysim](https://openvolley.github.io/volleysim/) package to estimate each team's probability of winning the match as well as the likelihood the match goes 3, 4 or 5 games.
 
 4. Where can I find the actual team rankings?
 
@@ -61,7 +63,7 @@ Not at the moment. There are a few extensions of paired rating systems that can 
 
 11. Are you going to do this for Division II/Division III/NAIA?
 
-Not at this time. If *you* want to do it for Division II or Division III, the code for you to do it is literally right here. All you need to do is change the conferences at the top of the workflow.
+Not at this time. If *you* want to do it for Division II or Division III, the code for you to do it is literally right here. All you need to do is change the conferences in lines 40-71 of the `full_workflow` file.
 
 12. Are you going to do this for men's volleyball/international vollebyall/etc.?
 
@@ -71,9 +73,11 @@ In theory, if we had play-by-play data, we could do this for any level of indoor
 
 Not until a couple of obstacles are solved. The easy obstacle to overcome is fixing the volleysim package to work with the beach format, assuming no wind advantage. The more difficult obstacle to overcome is the lack of play-by-play data, especially for NCAA Women's Beach Volleyball where the match-end condition is not consistent (sometimes they play all 5 games, sometimes they only play until someone wins 3).
 
-14. Why does Texas A&M-Corpus Christi have a raw rating of 0?
+14. What is this nonsense with "shrunk ratings"?
 
-The Bradley-Terry model, like any regression model that includes categorical variables, requires a reference level that does not appear in the model. In the Bradley-Terry model, the rating for the reference level is hard-coded to 0. The BradleyTerry2 package, by default, uses the first level as the reference level. In the dataset, this corresponds to the team that comes first alphabetically according to the NCAA website team names, which happens to be "A&M-Corpus Christi."
+In our initial public runs of the model, we found that we were too confident that the favorites would win. This suggested that our scaling factor was too small. Further investigation found that logistic regression produces biased estimates when the number of predictor variables is large (and we have 300+ in the model, considering that each team needs its own predictor variable). The most obvious consequence of this bias was that using the raw rating estimates consistently overestimated the sideout chances of each team.
+
+The "shrunk ratings" shrink the coefficient ratings toward the mean so that when two teams of equal strength play on a neutral court, the model will predict that both teams sideout at the average sideout rate in the full dataset. I'm not sure this is the optimal way to fix this, but it's a start.
 
 15. Are you planning to do anything more with the ratings?
 
