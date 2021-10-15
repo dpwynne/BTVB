@@ -174,13 +174,13 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
       games_df <- games_table %>%
         mutate(Location = case_when(
           !str_detect(Opponent, "\\@") ~ team_name,
-          str_detect(Opponent, "\\@ ") ~ str_remove(Opponent, "\\@ "),
-          str_detect(Opponent, "\\@(?=[^ ])") ~ str_extract(Opponent, "\\@(?=[^ ]).*") %>% str_remove("\\@")
+          str_detect(Opponent, "\\@ ") ~ str_trim(str_remove(Opponent, "\\@ ")),
+          str_detect(Opponent, "\\@(?=[^ ])") ~ str_trim(str_extract(Opponent, "\\@(?=[^ ]).*") %>% str_remove("\\@"))
         ),
         Opponent = case_when(
-          !str_detect(Opponent, "\\@") ~ Opponent,
-          str_detect(Opponent, "\\@ ") ~ str_remove(Opponent, "\\@ "),
-          str_detect(Opponent, "\\@(?=[^ ])") ~ str_remove(Opponent, "\\@(?=[^ ]).*")
+          !str_detect(Opponent, "\\@") ~ str_trim(Opponent),
+          str_detect(Opponent, "\\@ ") ~ str_trim(str_remove(Opponent, "\\@ ")),
+          str_detect(Opponent, "\\@(?=[^ ])") ~ str_trim(str_remove(Opponent, "\\@(?=[^ ]).*"))
         ),
         Date = lubridate::parse_date_time(Date, orders = c("m/d/Y H:M p", "m/d/Y", "m/d/Y(H)"))
         )
