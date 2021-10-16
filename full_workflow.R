@@ -261,20 +261,15 @@ vb_play_by_play <- function(pbp_url){
   
   pbp1 <- vb_play_by_play_ncaa(pbp_url)
   
-  if(is.null(pbp1)) {
-    return(NULL)
-  }
-  
-  if(nrow(pbp1) > 0){
-    return(pbp1)
-  } else {
-    pbp2 <- vb_play_by_play_ncaa2(pbp_url)
-    
-    if(is.null(pbp2)){
-      return(NULL)
+  if(is.null(pbp1) || nrow(pbp1) == 0) {  # some weirdness with nulls
+    pbp2 <- vb_play_by_play_ncaa2(pbp_url) # if pbp1 doesn't work try pbp2
+    if(is.null(pbp2) || nrow(pbp2) == 0){
+      return(NULL)  # if neither works return NULL
     } else {
       return(pbp2)
     }
+  } else {
+    return(pbp1)
   }
 }  # Wrapper function because NCAA is not consistent with how the play-by-play is formatted
 

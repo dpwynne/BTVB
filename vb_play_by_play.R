@@ -5,12 +5,18 @@
 vb_play_by_play <- function(pbp_url){
   
   pbp1 <- vb_play_by_play_ncaa(pbp_url)
-  if(nrow(pbp1) > 0){
-    return(pbp1)
+  
+  if(is.null(pbp1) || nrow(pbp1) == 0) {  # some weirdness with nulls
+    pbp2 <- vb_play_by_play_ncaa2(pbp_url) # if pbp1 doesn't work try pbp2
+    if(is.null(pbp2) || nrow(pbp2) == 0){
+      return(NULL)  # if neither works return NULL
+    } else {
+      return(pbp2)
+    }
   } else {
-    return(vb_play_by_play_ncaa2(pbp_url))# %>% select(-X4))
+    return(pbp1)
   }
-}
+}  # Wrapper function because NCAA is not consistent with how the play-by-play is formatted
 
 
 vb_play_by_play_ncaa <- function(pbp_url){
@@ -19,6 +25,10 @@ vb_play_by_play_ncaa <- function(pbp_url){
   match_id <- str_remove(pbp_url, "https://stats.ncaa.org/game/play_by_play/")
   
   sets <- bind_rows(game_info[-c(1:2)])
+  
+  if(nrow(sets) == 0){
+    return(NULL)
+  }   ## return NULL if there are no sets in the file, I'm hoping this fixes the issues
   
   teams <- c(sets$X1[1], sets$X3[1]) %>% str_squish()
   
@@ -72,7 +82,11 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
   
   sets <- bind_rows(game_info[-c(1:2)])
   
-  teams <- str_split(sets$X1[1], "-") %>% unlist() %>% str_squish() %>% fix_NCAA_names()
+  if(nrow(sets) == 0){
+    return(NULL)
+  }   ## return NULL if there are no sets in the file, I'm hoping this fixes the issues
+  
+    teams <- str_split(sets$X1[1], "-") %>% unlist() %>% str_squish() %>% fix_NCAA_names()
   # Problem here: if team has hyphenated name, we may not get the correct split
   
   set_starters <- list(starters_away = character((length(game_info) - 2)),
