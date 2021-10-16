@@ -239,13 +239,42 @@ NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_pl
 
 ###### Step 4: Get the play-by-play data for each (new) game ######
 
+fix_NCAA_names <- function(x){
+  case_when(x == "Americanan" ~ "American",
+            x == "N.C. AT" ~ "N.C. A&T",
+            str_detect(x, "Alabama AM") ~ "Alabama A&M",
+            str_detect(x, "Texas AM") ~ "Texas A&M",
+            str_detect(x, "Florida AM") ~ "Florida A&M",
+            x == "LMU (CA) (CA)" | x == "LMU" ~ "LMU (CA)",
+            x == "Binghamtonmton" ~ "Binghamton",
+            x == "Saint Marys" | x == "St. Marys" ~ "Saint Mary's (CA)",
+            x == "Gardner" ~ "Gardner-Webb",
+            x == "St. Johns" ~ "St. John's (NY)",
+            x == "William Mary" ~ "William & Mary",
+            x == "Bethune" ~ "Bethune-Cookman",
+            x == "Saint Francis" ~ "Saint Francis (PA)",
+            x == "Saint Peters" ~ "Saint Peter's",
+            TRUE ~ x)
+} # This function fixes every team naming issue I've seen in the 2021 (spring and fall) data
+
 vb_play_by_play <- function(pbp_url){
   
   pbp1 <- vb_play_by_play_ncaa(pbp_url)
+  
+  if(is.null(pbp1)) {
+    return(NULL)
+  }
+  
   if(nrow(pbp1) > 0){
     return(pbp1)
   } else {
-    return(vb_play_by_play_ncaa2(pbp_url))# %>% select(-X4))
+    pbp2 <- vb_play_by_play_ncaa2(pbp_url)
+    
+    if(is.null(pbp2)){
+      return(NULL)
+    } else {
+      return(pbp2)
+    }
   }
 }  # Wrapper function because NCAA is not consistent with how the play-by-play is formatted
 
@@ -256,6 +285,10 @@ vb_play_by_play_ncaa <- function(pbp_url){
   match_id <- str_remove(pbp_url, "https://stats.ncaa.org/game/play_by_play/")
   
   sets <- bind_rows(game_info[-c(1:2)])
+  
+  if(nrow(sets) == 0){
+    return(NULL)
+  }   ## return NULL if there are no sets in the file, I'm hoping this fixes the issues
   
   teams <- c(sets$X1[1], sets$X3[1]) %>% str_squish()
   
@@ -308,6 +341,10 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
   match_id <- str_remove(pbp_url, "https://stats.ncaa.org/game/play_by_play/")
   
   sets <- bind_rows(game_info[-c(1:2)])
+  
+  if(nrow(sets) == 0){
+    return(NULL)
+  }   ## return NULL if there are no sets in the file, I'm hoping this fixes the issues
   
   teams <- str_split(sets$X1[1], "-") %>% unlist() %>% str_squish() %>% fix_NCAA_names()
   # Problem here: if team has hyphenated name, we may not get the correct split
@@ -363,6 +400,7 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
   return(skills)
 }
 
+
 # Note: there may be some problems here with vb_play_by_play if a play-by-play exists but isn't formatted in either expected way
 all_NCAA_pbp <- map(NCAA_pbp_url, vb_play_by_play)
 
@@ -387,23 +425,6 @@ full_pbp <- all_NCAA_pbp_df %>%
 
 ##### Step 5: Filter the play-by-play to only look at serves ######
 
-fix_NCAA_names <- function(x){
-  case_when(x == "Americanan" ~ "American",
-            x == "N.C. AT" ~ "N.C. A&T",
-            str_detect(x, "Alabama AM") ~ "Alabama A&M",
-            str_detect(x, "Texas AM") ~ "Texas A&M",
-            str_detect(x, "Florida AM") ~ "Florida A&M",
-            x == "LMU (CA) (CA)" | x == "LMU" ~ "LMU (CA)",
-            x == "Binghamtonmton" ~ "Binghamton",
-            x == "Saint Marys" | x == "St. Marys" ~ "Saint Mary's (CA)",
-            x == "Gardner" ~ "Gardner-Webb",
-            x == "St. Johns" ~ "St. John's (NY)",
-            x == "William Mary" ~ "William & Mary",
-            x == "Bethune" ~ "Bethune-Cookman",
-            x == "Saint Francis" ~ "Saint Francis (PA)",
-            x == "Saint Peters" ~ "Saint Peter's",
-            TRUE ~ x)
-} # This function fixes every team naming issue I've seen in the 2021 (spring and fall) data
 
 # First we filter to just get the skills and fix the naming issues
 a2 <- full_pbp %>% filter(skill == "Serve") %>%
