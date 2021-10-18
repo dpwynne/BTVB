@@ -420,6 +420,8 @@ full_pbp <- all_NCAA_pbp_df %>%
 
 ##### Step 5: Filter the play-by-play to only look at serves ######
 
+# Now that we have all the play-by-play we remove some of the weirdness in the team name scraping
+NCAA_team_regex <- NCAA_teams$Name %>% str_replace("\\(", "\\\\(") %>% str_replace("\\)", "\\\\)") %>% str_replace_all("\\.", "\\\\.")
 
 # First we filter to just get the skills and fix the naming issues
 a2 <- full_pbp %>% filter(skill == "Serve") %>%
@@ -475,6 +477,7 @@ BT_model <- BTm(outcome = BT_outcomes2, player1 = serving_team2, player2 = recei
 # Each team will sideout at the average rate found in the dataset
 
 n <- length(coef(BT_model))
+serve_adj2 <- coef(BT_model)[(n-1)]  # raw (biased) serve adjustment
 
 b_bar <- mean(coef(BT_model))  # average coefficient value
 
