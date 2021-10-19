@@ -195,7 +195,6 @@ NCAA_all <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_schedule, sport = "Wom
 
 NCAA_games <- bind_rows(NCAA_all)  # turns it into a data frame
 
-
 NCAA_all_games <- NCAA_games[-which(duplicated(NCAA_games$url)),] %>% filter(!is.na(url)) # remove duplicated games
 
 ###### Step 3: Get the information for the games ######
@@ -579,7 +578,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
     
     if(nrow(games_table) == 0){
       warning(paste0(team_name, " does not appear to have played any games in ", year, "."))
-      games_df <- NA
+      games_df <- NULL
       
     } else {
       
@@ -604,7 +603,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
     }
     
   } else {
-    games_df <- NA
+    games_df <- NULL
   }
   
   return(games_df)
@@ -612,8 +611,8 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
 
 all_games <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_future_schedule, sport = "Women's Volleyball", year = 2022)
 
-prediction_date <- "2021-10-10"
-games_week <- all_games %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8)))
+prediction_date <- "2021-10-17"
+games_week <- all_games %>% bind_rows() %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8)))
 ## Need to add 1-8 days because it counts duration from 12 midnight on the prediction date
 
 ###### Step 12: Match each game's teams to their ratings ######
@@ -636,8 +635,15 @@ games_predictions <- games_week %>% mutate(
 ) %>% rename(Home_Rating = Rating, Home_Rank = Rank) %>%
   left_join(
     current_ratings_teams, by = c("away" = "Team")
-  ) %>% rename(Away_Rating = Rating, Away_Rank = Rank)
+  ) %>% rename(Away_Rating = Rating, Away_Rank = Rank) %>%
+  mutate(
+    pred_id = paste0(Date, Location, apply(games_predictions %>% select(away, home), 1,
+                    function(x) paste(str_sort(c(x[1], x[2])), collapse = "")
+                      )
+                    )  # there's probably a better way to do this but it works for now
+  )
 
+games_predictions <- games_predictions[!duplicated(games_predictions$pred_id),] %>% select(-pred_id)
 
 ###### Step 13: Predict the sideout rates for each team ######
 
