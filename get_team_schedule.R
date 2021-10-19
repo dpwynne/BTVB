@@ -114,7 +114,7 @@ get_team_schedule <- function(team_name, team_id, sport, year){
 }
 
 get_team_future_schedule <- function(team_name, team_id, sport, year){
-  
+
   # This function is to get all of the games a team has played that the NCAA website lists, whether or not there are results
   # This is good for getting the future games in the current year
   # team_name is the name of the team on the NCAA website
@@ -167,7 +167,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
     
     if(nrow(games_table) == 0){
       warning(paste0(team_name, " does not appear to have played any games in ", year, "."))
-      games_df <- NA
+      games_df <- NULL
       
     } else {
       
@@ -192,7 +192,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
     }
     
   } else {
-    games_df <- NA
+    games_df <- NULL
   }
   
   return(games_df)
