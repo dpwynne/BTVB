@@ -210,7 +210,9 @@ pbp_boxscore_links <- function(url){
     return_links <- c(paste0("https://stats.ncaa.org", box_score_link), NA_character_)
   }
   
-  names(return_links) <- c("box_score", "play_by_play")
+  return_links <- c(url, return_links)
+  
+  names(return_links) <- c("url", "box_score", "play_by_play")
   
   return(return_links)
 }
@@ -218,8 +220,16 @@ pbp_boxscore_links <- function(url){
 
 #### Option 3a: Get the information for all games in the dataset ####
 
-pbp_box_urls <- map_df(NCAA_all_games$url, pbp_boxscore_links)
-NCAA_game_pbp <- bind_cols(NCAA_all_games, pbp_box_urls) %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
+## Ultimately should throw the try-catch in the pbp_boxscore_links function, but this suffices for now
+safe_pbp_boxscore_links <- function(url) {
+  tryCatch(pbp_boxscore_links(url),
+           error = function(e) NULL)
+}
+
+pbp_box_urls <- map_df(NCAA_all_games$url, safe_pbp_boxscore_links)
+#NCAA_game_pbp <- bind_cols(NCAA_all_games, pbp_box_urls) %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
+
+NCAA_game_pbp <- inner_join(NCAA_all_games, pbp_box_urls, by = "url") %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
 
 NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_play))]  # remove any missing play-by-play links
 
@@ -637,6 +647,10 @@ games_predictions <- games_week %>% mutate(
     current_ratings_teams, by = c("away" = "Team")
   ) %>% rename(Away_Rating = Rating, Away_Rank = Rank) %>%
   mutate(
+    Date = as.Date(Date)
+    )
+
+games_predictions <- games_predictions %>% mutate(
     pred_id = paste0(Date, Location, apply(games_predictions %>% select(away, home), 1,
                     function(x) paste(str_sort(c(x[1], x[2])), collapse = "")
                       )
