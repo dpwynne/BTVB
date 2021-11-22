@@ -249,7 +249,8 @@ NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_pl
 ###### Step 4: Get the play-by-play data for each (new) game ######
 
 fix_NCAA_names <- function(x){
-  case_when(x == "Americanan" ~ "American",
+  case_when(str_detect(x, "#") ~ str_remove(x, "#[0-9]+ "),
+            x == "Americanan" ~ "American",
             x == "N.C. AT" ~ "N.C. A&T",
             str_detect(x, "Alabama AM") ~ "Alabama A&M",
             str_detect(x, "Texas AM") ~ "Texas A&M",
@@ -621,8 +622,16 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
 
 all_games <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_future_schedule, sport = "Women's Volleyball", year = 2022)
 
-prediction_date <- "2021-10-24"
-games_week <- all_games %>% bind_rows() %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8)))
+prediction_date <- "2021-11-14"
+games_week <- all_games %>% bind_rows() %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8))) %>%
+  mutate(Opponent = str_remove_all(Opponent, "#[0-9]+ "),
+         Location = str_remove_all(Location, "#[0-9]+ ")) %>%   # get rid of seed and tournament name
+  mutate(Opponent = str_remove(Opponent, "2021(-22)* .+ Championship"), 
+         Location = str_remove(Location, "(\\()*2021(-22)* .+ Championship(\\))*")) %>%
+  mutate(Opponent = str_remove(Opponent, "20-21 WVB ASU Championship"),
+         Location = str_remove(Location, "(\\()*20-21 WVB ASU Championship(\\))*")) %>%  # Because the ASUN conference doesn't know what year it is
+  mutate(Opponent = if_else(nchar(Opponent) == 0, Location, Opponent)) %>%
+  mutate(Team = str_trim(Team), Opponent = str_trim(Opponent), Location = str_trim(Location))
 ## Need to add 1-8 days because it counts duration from 12 midnight on the prediction date
 
 ###### Step 12: Match each game's teams to their ratings ######
@@ -640,6 +649,10 @@ current_ratings_teams <- serve_df2 %>% select(Team, Rank, Rating)
 games_predictions <- games_week %>% mutate(
   away = if_else(Opponent != Location, Opponent, Team),
   home = if_else(Opponent == Location, Opponent, Team)
+) %>% mutate(
+  home = str_replace(home, "\\\\u0026", "&"),
+  away = str_replace(away, "\\\\u0026", "&"),
+  Location = str_replace(Location, "\\\\u0026", "&")
 ) %>% left_join(
   current_ratings_teams, by = c("home" = "Team")
 ) %>% rename(Home_Rating = Rating, Home_Rank = Rank) %>%
@@ -734,7 +747,7 @@ games_predictions_final <- games_predictions3 %>% transmute(
 
 ## You can save the predictions to a csv file if you want
 #predictions_file <- paste0("predictions_", prediction_date, ".csv")
-#write_csv(games_predictions_final, predictions_file)
+#write_csv(games_predictions_final %>% filter(!is.na(`Predicted Winner`)), predictions_file)
 
 
 ###### Step 15: Download boxscore data and see how good your predictions were
@@ -865,6 +878,8 @@ clean_vb_box_score <- function(box_score_table){
 NCAA_box_url <- NCAA_game_pbp$box_score[which(!is.na(NCAA_game_pbp$box_score))]
 
 all_NCAA_box <- suppressWarnings(map(NCAA_box_url, vb_boxscore))
+
+all_NCAA_box <- all_NCAA_box[lengths(all_NCAA_box) > 0]
 
 NCAA_box_df <- (all_NCAA_box %>% transpose())$info %>% bind_rows()
 
