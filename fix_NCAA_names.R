@@ -18,3 +18,23 @@ fix_NCAA_names <- function(x){
             x == "Saint Peters" ~ "Saint Peter's",
             TRUE ~ x)
 }
+
+fix_Miami <- function(df){
+  df %>% mutate(
+    team = case_when(
+      team != "Miami" ~ team,
+      away_team == "Miami (OH)" | home_team == "Miami (OH)" ~ "Miami (OH)",
+      away_team == "Miami (FL)" | home_team == "Miami (FL)" ~ "Miami (FL)"
+    ),
+    serving_team = case_when(
+      serving_team != "Miami" ~ serving_team,
+      away_team == "Miami (OH)" | home_team == "Miami (OH)" ~ "Miami (OH)",
+      away_team == "Miami (FL)" | home_team == "Miami (FL)" ~ "Miami (FL)"
+    ),
+    point_won_by = case_when(
+      point_won_by != "Miami" ~ point_won_by,
+      away_team == "Miami (OH)" | home_team == "Miami (OH)" ~ "Miami (OH)",
+      away_team == "Miami (FL)" | home_team == "Miami (FL)" ~ "Miami (FL)"
+    )
+  )
+}
