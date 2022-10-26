@@ -100,7 +100,7 @@ get_team_schedule <- function(team_name, team_id, sport, year){
   } else {
     schedule_link <- html_attr(schedule_links, "href")[schedule_link_detect]
     
-    url2 <- paste0("https://stats.ncaa.org", schedule_link)
+    url2 <- paste0("https://stats.ncaa.org", schedule_link)[1]
   }
   
   # Step 2: see if the team supported the sport in that year
@@ -189,7 +189,7 @@ get_team_schedule <- function(team_name, team_id, sport, year){
 
 # You have to run the line below every time because the NCAA website created new links to games recently played and this function finds the links
 
-NCAA_all <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_schedule, sport = "Women's Volleyball", year = 2022)
+NCAA_all <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_schedule, sport = "Women's Volleyball", year = 2023)
 
 # Lots of warnings will pop up because several teams do not support Women's Volleyball
 
@@ -201,7 +201,10 @@ NCAA_all_games <- NCAA_games[-which(duplicated(NCAA_games$url)),] %>% filter(!is
 
 pbp_boxscore_links <- function(url){
   all_links <- read_html(url) %>% html_nodes("a")
-  box_score_link <- html_attr(all_links, "href")[str_detect(html_text(all_links), "Box Score") & (html_attr(all_links, "href") != "#")]
+  box_score_link <- html_attr(all_links, "href")[str_detect(html_text(all_links), "1st Set")] %>% str_remove("\\?period_no=1")
+  if(length(box_score_link) == 0){
+    box_score_link <- html_attr(all_links, "href")[str_detect(html_text(all_links), "Box Score") & (html_attr(all_links, "href") != "#")]
+  }
   pbp_link <- html_attr(all_links, "href")[str_detect(html_text(all_links), "Play by Play")]
   
   if(length(pbp_link) == 1){
@@ -237,13 +240,15 @@ NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_pl
 
 ## Generally this option works better if you already have a dataset of play-by-play for previous games
 
-#library(lubridate)
-#last_sunday_date <- "2021-10-03"
-#sunday_date <- "2021-10-10"
-#NCAA_new_games <- NCAA_all_games %>% filter(date > ymd(last_sunday_date), date <= ymd(sunday_date))  # finds only the new games
-#pbp_box_urls <- map_df(NCAA_all_games$url, pbp_boxscore_links)
-#NCAA_game_pbp <- bind_cols(NCAA_all_games, pbp_box_urls) %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
-#NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_play))]
+library(lubridate)
+last_sunday_date <- "2022-10-16"
+sunday_date <- "2022-10-23"
+NCAA_new_games <- NCAA_all_games %>% filter(date > ymd(last_sunday_date), date <= ymd(sunday_date))  # finds only the new games
+pbp_box_urls_new <- map_df(NCAA_new_games$url, safe_pbp_boxscore_links)  %>% right_join(NCAA_new_games, by = "url")
+
+#NCAA_game_pbp <- bind_rows(NCAA_all_games, pbp_box_urls_new) %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
+NCAA_game_pbp <- pbp_box_urls_new %>% mutate(game_id = str_remove(play_by_play, "https://stats.ncaa.org/game/play_by_play/"))
+NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_play))]
 
 
 ###### Step 4: Get the play-by-play data for each (new) game ######
@@ -266,6 +271,43 @@ fix_NCAA_names <- function(x){
             x == "Saint Peters" ~ "Saint Peter's",
             TRUE ~ x)
 } # This function fixes every team naming issue I've seen in the 2021 (spring and fall) data
+
+# Stupid Miami issue
+fix_NCAA_parentheses <- function(x){
+  x %>% mutate(team = case_when(
+    team == "Albany" & (away_team == "Albany (NY)" | home_team == "Albany (NY)") ~ "Albany (NY)",
+    team == "LMU" & (away_team == "LMU (CA)" | home_team == "LMU (CA)") ~ "LMU (CA)",
+    team == "Miami" & (away_team == "Miami (FL)" | home_team == "Miami (FL)") ~ "Miami (FL)",
+    team == "Miami" & (away_team == "Miami (OH)" | home_team == "Miami (OH)") ~ "Miami (OH)",
+    team == "Saint Francis" & (away_team == "Saint Francis (PA)" | home_team == "Saint Francis (PA)") ~ "Saint Francis (PA)",
+    team == "Saint Mary's" & (away_team == "Saint Mary's (CA)" | home_team == "Saint Mary's (CA)") ~ "Saint Mary's (CA)",
+    team == "St. John's" & (away_team == "St. John's (NY)" | home_team == "St. John's (NY)") ~ "St. John's (NY)",
+    team == "St. Thomas" & (away_team == "St. Thomas (MN)" | home_team == "St. Thomas (MN)") ~ "St. Thomas (MN)",
+    TRUE ~ team
+  ),
+  serving_team = case_when(
+    serving_team == "Albany" & (away_team == "Albany (NY)" | home_team == "Albany (NY)") ~ "Albany (NY)",
+    serving_team == "LMU" & (away_team == "LMU (CA)" | home_team == "LMU (CA)") ~ "LMU (CA)",
+    serving_team == "Miami" & (away_team == "Miami (FL)" | home_team == "Miami (FL)") ~ "Miami (FL)",
+    serving_team == "Miami" & (away_team == "Miami (OH)" | home_team == "Miami (OH)") ~ "Miami (OH)",
+    serving_team == "Saint Francis" & (away_team == "Saint Francis (PA)" | home_team == "Saint Francis (PA)") ~ "Saint Francis (PA)",
+    serving_team == "Saint Mary's" & (away_team == "Saint Mary's (CA)" | home_team == "Saint Mary's (CA)") ~ "Saint Mary's (CA)",
+    serving_team == "St. John's" & (away_team == "St. John's (NY)" | home_team == "St. John's (NY)") ~ "St. John's (NY)",
+    serving_team == "St. Thomas" & (away_team == "St. Thomas (MN)" | home_team == "St. Thomas (MN)") ~ "St. Thomas (MN)",
+    TRUE ~ serving_team  
+  ),
+  point_won_by = case_when(
+    point_won_by == "Albany" & (away_team == "Albany (NY)" | home_team == "Albany (NY)") ~ "Albany (NY)",
+    point_won_by == "LMU" & (away_team == "LMU (CA)" | home_team == "LMU (CA)") ~ "LMU (CA)",
+    point_won_by == "Miami" & (away_team == "Miami (FL)" | home_team == "Miami (FL)") ~ "Miami (FL)",
+    point_won_by == "Miami" & (away_team == "Miami (OH)" | home_team == "Miami (OH)") ~ "Miami (OH)",
+    point_won_by == "Saint Francis" & (away_team == "Saint Francis (PA)" | home_team == "Saint Francis (PA)") ~ "Saint Francis (PA)",
+    point_won_by == "Saint Mary's" & (away_team == "Saint Mary's (CA)" | home_team == "Saint Mary's (CA)") ~ "Saint Mary's (CA)",
+    point_won_by == "St. John's" & (away_team == "St. John's (NY)" | home_team == "St. John's (NY)") ~ "St. John's (NY)",
+    point_won_by == "St. Thomas" & (away_team == "St. Thomas (MN)" | home_team == "St. Thomas (MN)") ~ "St. Thomas (MN)",
+    TRUE ~ point_won_by
+  ))
+}
 
 vb_play_by_play <- function(pbp_url){
   
@@ -421,12 +463,12 @@ full_pbp <- all_NCAA_pbp_df %>%
 
 #### Only for people storing play-by-play files every week ####
 
-#old_pbp_file <- paste0("pbp_", last_sunday_date, ".csv")
-#old_pbp <- read_csv(old_pbp_file)
-#full_pbp <- bind_rows(old_pbp, full_pbp)
-#full_pbp <- full_pbp %>% mutate(id = seq(1, nrow(full_pbp)))
-#new_pbp_file <- paste0("pbp_", sunday_date, ".csv")
-#write_csv(full_pbp, new_pbp_file)
+old_pbp_file <- paste0("pbp_", last_sunday_date, ".csv")
+old_pbp <- read_csv(old_pbp_file)
+full_pbp <- bind_rows(old_pbp, full_pbp)
+full_pbp <- full_pbp %>% mutate(id = seq(1, nrow(full_pbp)))
+new_pbp_file <- paste0("pbp_", sunday_date, ".csv")
+write_csv(full_pbp, new_pbp_file)
 
 ##### Step 5: Filter the play-by-play to only look at serves ######
 
@@ -528,10 +570,10 @@ serve_df2 <- serve_df %>% left_join(NCAA_teams %>% mutate(Name = str_replace(Nam
   select(Rank, Team, Conference, Rating, Rating_Raw)
 
 #### Only if you want to save the ratings for future predictions/evaluations ####
-#library(lubridate)
+library(lubridate)
 #sunday_date <- "2021-10-24"
-#new_ratings_df <- paste0("ratings_", sunday_date, ".csv")
-#write_csv(serve_df2, new_ratings_df)
+new_ratings_df <- paste0("ratings_", sunday_date, ".csv")
+write_csv(serve_df2, new_ratings_df)
 
 ###### Step 11: Find the games to predict ######
 
@@ -620,9 +662,9 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
   return(games_df)
 }
 
-all_games <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_future_schedule, sport = "Women's Volleyball", year = 2022)
+all_games <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_future_schedule, sport = "Women's Volleyball", year = 2023)
 
-prediction_date <- "2021-11-14"
+prediction_date <- "2022-10-23"
 games_week <- all_games %>% bind_rows() %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8))) %>%
   mutate(Opponent = str_remove_all(Opponent, "#[0-9]+ "),
          Location = str_remove_all(Location, "#[0-9]+ ")) %>%   # get rid of seed and tournament name
@@ -746,8 +788,8 @@ games_predictions_final <- games_predictions3 %>% transmute(
   arrange(Date, `Home Rank`, `Away Rank`)
 
 ## You can save the predictions to a csv file if you want
-#predictions_file <- paste0("predictions_", prediction_date, ".csv")
-#write_csv(games_predictions_final %>% filter(!is.na(`Predicted Winner`)), predictions_file)
+predictions_file <- paste0("predictions_", prediction_date, ".csv")
+write_csv(games_predictions_final %>% filter(!is.na(`Predicted Winner`)), predictions_file)
 
 
 ###### Step 15: Download boxscore data and see how good your predictions were
@@ -883,11 +925,15 @@ all_NCAA_box <- all_NCAA_box[lengths(all_NCAA_box) > 0]
 
 NCAA_box_df <- (all_NCAA_box %>% transpose())$info %>% bind_rows()
 
-a4 <- NCAA_box_df %>% left_join((NCAA_game_pbp %>% mutate(
+a4 <- NCAA_box_df %>% 
+  left_join((NCAA_game_pbp %>% mutate(
   home = str_replace(home, "\\\\u0026", "&"),
   away = str_replace(away, "\\\\u0026", "&"),
   location = str_replace(location, "\\\\u0026", "&")
-)) %>% select(game_id, location, box_score, play_by_play), by = c("game_id"))
+)) %>% select(game_id, location, box_score, play_by_play), by = c("game_id")) %>%
+  mutate(home = str_remove_all(home, "#[0-9]+ "),
+         away = str_remove_all(away, "#[0-9]+ "),
+         location = str_remove_all(location, "#[0-9]+ "))
 
 a4_winner <- a4 %>% mutate(winner = if_else(away_sets > home_sets, away, home),
                            sets = away_sets + home_sets)
@@ -897,17 +943,32 @@ a4_winner <- a4 %>% mutate(winner = if_else(away_sets > home_sets, away, home),
 
 #new_NCAA_pbp <- map(a4_missing$play_by_play, vb_play_by_play)
 
-new_NCAA_pbp_full <- new_NCAA_pbp %>% bind_rows() %>% fill(away_score, home_score, .direction= "down") %>%
-  filter(!str_detect(player_name, "Set end"))
-new_NCAA_pbp_full <- new_NCAA_pbp_full %>% mutate(id = seq(1, nrow(new_NCAA_pbp_full))) %>%
-  left_join(NCAA_game_pbp %>% select(game_id, location, box_score, play_by_play), by = c("ncaa_match_id" = "game_id")) %>%
-  mutate(ncaa_match_id = as.numeric(ncaa_match_id))
+# new_NCAA_pbp_full <- new_NCAA_pbp %>% bind_rows() %>% fill(away_score, home_score, .direction= "down") %>%
+#   filter(!str_detect(player_name, "Set end"))
+# new_NCAA_pbp_full <- new_NCAA_pbp_full %>% mutate(id = seq(1, nrow(new_NCAA_pbp_full))) %>%
+#   left_join(NCAA_game_pbp %>% select(game_id, location, box_score, play_by_play), by = c("ncaa_match_id" = "game_id")) %>%
+#   mutate(ncaa_match_id = as.numeric(ncaa_match_id))
+# 
+# full_pbp2 <- bind_rows(full_pbp, new_NCAA_pbp_full)
+# full_pbp2 <- full_pbp2 %>% mutate(id = seq(1, nrow(full_pbp2)))
 
-full_pbp2 <- bind_rows(full_pbp, new_NCAA_pbp_full)
-full_pbp2 <- full_pbp2 %>% mutate(id = seq(1, nrow(full_pbp2)))
 
-all_box_file <- paste0("C:/Users/dpwyn/Documents/Volleyball Analytics/BTVB/box_info_",sunday_date, ".csv")
+a4_box <- a4_winner %>% 
+  mutate(location = str_remove_all(location, "#[0-9]+ ")) %>%   # get rid of seed and tournament name
+  mutate(location = str_remove(location, "(\\()*2021(-22)* .+ Championship(\\))*")) %>%
+  mutate(location = str_remove(location, "(\\()*20-21 WVB ASU Championship(\\))*")) %>%  # Because the ASUN conference doesn't know what year it is
+  mutate(location = str_trim(location)) %>%
+  select(game_id,	date,	away,	home,	away_sets,	home_sets,	
+         away_points,	home_points,	away_pointpct,	home_pointpct,
+         location,	box_score,	play_by_play,	winner,	sets)
+# Have to select for consistency with previous
 
-sets_all <- bind_rows(old_box, a4_winner %>% mutate(game_id = as.numeric(game_id))) %>% mutate(date = as.Date(date))
+
+all_box_file <- paste0("box_info_",sunday_date, ".csv")
+
+old_box_file <- paste0("box_info_", last_sunday_date, ".csv")
+old_box <- read_csv(old_box_file)
+sets_all <- bind_rows(old_box, a4_box %>% mutate(game_id = as.numeric(game_id))) %>% mutate(date = as.Date(date))
+#sets_all <- a4_box %>% mutate(game_id = as.numeric(game_id)) %>% mutate(date = as.Date(date))
 
 write_csv(sets_all, all_box_file)

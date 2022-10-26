@@ -26,7 +26,7 @@ get_team_schedule <- function(team_name, team_id, sport, year){
   } else {
     schedule_link <- html_attr(schedule_links, "href")[schedule_link_detect]
     
-    url2 <- paste0("https://stats.ncaa.org", schedule_link)
+    url2 <- paste0("https://stats.ncaa.org", schedule_link)[1]
   }
   
   # Step 2: see if the team supported the sport in that year
