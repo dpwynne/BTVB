@@ -187,6 +187,7 @@ get_team_schedule <- function(team_name, team_id, sport, year){
   return(games_df)
 }
 
+
 # You have to run the line below every time because the NCAA website created new links to games recently played and this function finds the links
 
 NCAA_all <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_schedule, sport = "Women's Volleyball", year = 2023)
@@ -241,8 +242,8 @@ NCAA_pbp_url <- NCAA_game_pbp$play_by_play[which(!is.na(NCAA_game_pbp$play_by_pl
 ## Generally this option works better if you already have a dataset of play-by-play for previous games
 
 library(lubridate)
-last_sunday_date <- "2022-10-16"
-sunday_date <- "2022-10-23"
+last_sunday_date <- "2022-11-13"
+sunday_date <- "2022-11-20"
 NCAA_new_games <- NCAA_all_games %>% filter(date > ymd(last_sunday_date), date <= ymd(sunday_date))  # finds only the new games
 pbp_box_urls_new <- map_df(NCAA_new_games$url, safe_pbp_boxscore_links)  %>% right_join(NCAA_new_games, by = "url")
 
@@ -580,7 +581,8 @@ write_csv(serve_df2, new_ratings_df)
 get_team_future_schedule <- function(team_name, team_id, sport, year){
   
   # This function is to get all of the games a team has played that the NCAA website lists, whether or not there are results
-  # This is good for getting the future games in the current year
+  # This is good for getting the future games in the current year, 
+  # or games for sports that the NCAA website doesn't link to box scores (e.g., water polo)
   # team_name is the name of the team on the NCAA website
   # team_id is the id of the team on the NCAA website
   # generally we get team_name and team_id from the team_mapping() function
@@ -599,7 +601,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
   } else {
     schedule_link <- html_attr(schedule_links, "href")[schedule_link_detect]
     
-    url2 <- paste0("https://stats.ncaa.org", schedule_link)
+    url2 <- paste0("https://stats.ncaa.org", schedule_link)[1]
   }
   
   if(is.numeric(year)){  # if year is numeric, have to convert to academic year
@@ -664,7 +666,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
 
 all_games <- map2(NCAA_teams$Name, NCAA_teams$ID, get_team_future_schedule, sport = "Women's Volleyball", year = 2023)
 
-prediction_date <- "2022-10-23"
+prediction_date <- "2022-11-20"
 games_week <- all_games %>% bind_rows() %>% filter(Date >= (ymd(prediction_date) + ddays(1)), Date < (ymd(prediction_date) + ddays(8))) %>%
   mutate(Opponent = str_remove_all(Opponent, "#[0-9]+ "),
          Location = str_remove_all(Location, "#[0-9]+ ")) %>%   # get rid of seed and tournament name
@@ -794,7 +796,13 @@ write_csv(games_predictions_final %>% filter(!is.na(`Predicted Winner`)), predic
 
 ###### Step 15: Download boxscore data and see how good your predictions were
 
-vb_boxscore <- function(box_score_url){
+
+# This parses the box score data
+# The result is two lists:
+# info gives information about the game like how many sets and how many points each team won
+# player_stats gives the player staats
+
+vb_boxscore <- function(box_score_url, include_set_scores = FALSE){
   game <- vector("list")
   game_html <- read_html(box_score_url)
   
@@ -822,8 +830,15 @@ vb_boxscore <- function(box_score_url){
   
   game_away_sets <- game_teams_scores[2, ncol(game_teams_scores)] %>% as.numeric()
   game_home_sets <- game_teams_scores[3, ncol(game_teams_scores)] %>% as.numeric()
-  game_away_total_points <- game_teams_scores[2, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric() %>% sum()
-  game_home_total_points <- game_teams_scores[3, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric() %>% sum()
+  game_away_points <- game_teams_scores[2, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric()
+  game_away_total_points <-  sum(game_away_points)
+  game_home_points <- game_teams_scores[3, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric()
+  game_home_total_points <-  sum(game_home_points)
+  
+  set_scores <- tibble(set = seq(1, game_away_sets + game_home_sets),
+                       away = game_away_points,
+                       home = game_home_points)
+  names(set_scores) <- c("Set", game_away, game_home)
   
   if(length(game_html %>% html_nodes(".errors")) > 0){
     # if there are known errors then we shouldn't scrape the known-error player data
@@ -860,16 +875,17 @@ vb_boxscore <- function(box_score_url){
       mutate(opponent = game_players_away[1,1])
   }
   
-  game$info <- data.frame(game_id = str_remove(box_score_url, "https://stats.ncaa.org/game/box_score/"),
-                          date = game_date,
-                          away = game_away,
-                          home = game_home,
-                          away_sets = game_away_sets,
-                          home_sets = game_home_sets,
-                          away_points = game_away_total_points,
-                          home_points = game_home_total_points,
-                          away_pointpct = game_away_total_points/(game_away_total_points + game_home_total_points),
-                          home_pointpct = game_home_total_points/(game_away_total_points + game_home_total_points))
+  game$info <- tibble(game_id = str_remove(box_score_url, "https://stats.ncaa.org/game/box_score/"),
+                      date = game_date,
+                      away = game_away,
+                      home = game_home,
+                      away_sets = game_away_sets,
+                      home_sets = game_home_sets,
+                      if(include_set_scores) {nest(set_scores, scores = everything())},
+                      away_points = game_away_total_points,
+                      home_points = game_home_total_points,
+                      away_pointpct = game_away_total_points/(game_away_total_points + game_home_total_points),
+                      home_pointpct = game_home_total_points/(game_away_total_points + game_home_total_points))
   game$player_stats <- bind_rows(game_players_away_stats, game_players_home_stats) %>% 
     mutate(date = game_date,
            game_id = game$info$game_id)
@@ -877,11 +893,12 @@ vb_boxscore <- function(box_score_url){
   return(game)
 }
 
-# This should clean the box score
+# This should clean the box score but I still need to work out some weird issues with special formatting
 clean_vb_box_score <- function(box_score_table){
   players_stats <- box_score_table[3:(nrow(box_score_table) - 2),]
-  names(players_stats) <- box_score_table[2,]
+  names(players_stats) <- as.character(box_score_table[2,])
   players_stats$team <- box_score_table[1,1]
+  
   players_stats <- players_stats %>%
     mutate(S = as.numeric(str_remove(S, "/")),  # I think the forward slash indicates some kind of season high? 
            Kills = as.numeric(str_remove(Kills, "/")),
