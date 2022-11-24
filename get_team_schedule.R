@@ -114,9 +114,10 @@ get_team_schedule <- function(team_name, team_id, sport, year){
 }
 
 get_team_future_schedule <- function(team_name, team_id, sport, year){
-
+  
   # This function is to get all of the games a team has played that the NCAA website lists, whether or not there are results
-  # This is good for getting the future games in the current year
+  # This is good for getting the future games in the current year, 
+  # or games for sports that the NCAA website doesn't link to box scores (e.g., water polo)
   # team_name is the name of the team on the NCAA website
   # team_id is the id of the team on the NCAA website
   # generally we get team_name and team_id from the team_mapping() function
@@ -135,7 +136,7 @@ get_team_future_schedule <- function(team_name, team_id, sport, year){
   } else {
     schedule_link <- html_attr(schedule_links, "href")[schedule_link_detect]
     
-    url2 <- paste0("https://stats.ncaa.org", schedule_link)
+    url2 <- paste0("https://stats.ncaa.org", schedule_link)[1]
   }
   
   if(is.numeric(year)){  # if year is numeric, have to convert to academic year
