@@ -4,7 +4,7 @@
 # info gives information about the game like how many sets and how many points each team won
 # player_stats gives the player staats
 
-vb_boxscore <- function(box_score_url){
+vb_boxscore <- function(box_score_url, include_set_scores = FALSE){
   game <- vector("list")
   game_html <- read_html(box_score_url)
   
@@ -32,8 +32,15 @@ vb_boxscore <- function(box_score_url){
   
   game_away_sets <- game_teams_scores[2, ncol(game_teams_scores)] %>% as.numeric()
   game_home_sets <- game_teams_scores[3, ncol(game_teams_scores)] %>% as.numeric()
-  game_away_total_points <- game_teams_scores[2, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric() %>% sum()
-  game_home_total_points <- game_teams_scores[3, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric() %>% sum()
+  game_away_points <- game_teams_scores[2, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric()
+  game_away_total_points <-  sum(game_away_points)
+  game_home_points <- game_teams_scores[3, 2:(ncol(game_teams_scores) - 1)] %>% as.numeric()
+  game_home_total_points <-  sum(game_home_points)
+  
+  set_scores <- tibble(set = seq(1, game_away_sets + game_home_sets),
+                       away = game_away_points,
+                       home = game_home_points)
+  names(set_scores) <- c("Set", game_away, game_home)
   
   if(length(game_html %>% html_nodes(".errors")) > 0){
     # if there are known errors then we shouldn't scrape the known-error player data
@@ -70,12 +77,13 @@ vb_boxscore <- function(box_score_url){
       mutate(opponent = game_players_away[1,1])
   }
   
-  game$info <- data.frame(game_id = str_remove(box_score_url, "https://stats.ncaa.org/game/box_score/"),
+  game$info <- tibble(game_id = str_remove(box_score_url, "https://stats.ncaa.org/game/box_score/"),
                           date = game_date,
                           away = game_away,
                           home = game_home,
                           away_sets = game_away_sets,
                           home_sets = game_home_sets,
+                          if(include_set_scores) {nest(set_scores, scores = everything())},
                           away_points = game_away_total_points,
                           home_points = game_home_total_points,
                           away_pointpct = game_away_total_points/(game_away_total_points + game_home_total_points),
@@ -90,8 +98,9 @@ vb_boxscore <- function(box_score_url){
 # This should clean the box score but I still need to work out some weird issues with special formatting
 clean_vb_box_score <- function(box_score_table){
   players_stats <- box_score_table[3:(nrow(box_score_table) - 2),]
-  names(players_stats) <- box_score_table[2,]
+  names(players_stats) <- as.character(box_score_table[2,])
   players_stats$team <- box_score_table[1,1]
+  
   players_stats <- players_stats %>%
     mutate(S = as.numeric(str_remove(S, "/")),  # I think the forward slash indicates some kind of season high? 
            Kills = as.numeric(str_remove(Kills, "/")),
