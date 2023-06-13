@@ -33,7 +33,7 @@ vb_play_by_play_ncaa <- function(pbp_url){
   teams <- c(sets$X1[1], sets$X3[1]) %>% str_squish()
   
   skills_regex <- "serve|Reception|Block|Set|Attack|Freeball|Dig"
-  skills_removed <- " serves|Reception by |Block by |Set by |Attack by |Dig by "
+  skills_removed <- "( serves)|(Reception\\s+by )|(Block\\s+by )|(Set\\s+by )|(Attack\\s+by )|(Dig\\s+by )"
   
   ## Step 1: Add set number, skill type, away and home scores, serving team  
   sets <- sets %>% mutate(
@@ -44,8 +44,10 @@ vb_play_by_play_ncaa <- function(pbp_url){
     team = if_else(
       nchar(X1) > 0, X1[1], X3[1]
     ),
-    player_name = if_else(
-      nchar(X1) > 0, str_remove(X1, skills_removed), str_remove(X3, skills_removed)
+    player_name = case_when(
+      nchar(X1) > 0 & nchar(X2) == 0 ~ str_remove(X1, skills_removed),
+      nchar(X3) > 0 & nchar(X2) == 0 ~ str_remove(X3, skills_removed),
+      nchar(X2) > 0 ~ NA_character_
     ) %>% str_squish(),
     away_score = suppressWarnings(as.numeric(str_split_fixed(X2, "-", 2)[,1])),  ## Warning here since Score will be non-numeric
     home_score = suppressWarnings(as.numeric(str_split_fixed(X2, "-", 2)[,2])),
@@ -93,7 +95,7 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
                        starters_home = character((length(game_info) - 2))
   )
   for(i in 3:length(game_info)){
-    set_starters[[1]][(i-2)] <- game_info[[i]]$X2[2] %>% str_replace_all("3a", " ")
+    set_starters[[1]][(i-2)] <- game_info[[i]]$X2[2] %>% str_replace_all("3a", " ") 
     set_starters[[2]][(i-2)] <- game_info[[i]]$X2[3] %>% str_replace_all("3a", " ")
   }
   set_starters <- unlist(set_starters)
@@ -107,7 +109,7 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
     mutate(
       set_number = cumsum(str_detect(X1, "End of")) + 1,
       skill = "Serve",
-      player_name = str_extract(X2, ": \\(.+\\)\\s") %>% str_remove(": \\(") %>% str_remove("\\)") %>% str_squish(),
+      player_name = str_extract(X2, ":\\s+\\(.+\\)\\s") %>% str_remove(":\\s+\\(") %>% str_remove("\\)") %>% str_squish(),
       away_score = suppressWarnings(as.numeric(str_split_fixed(X1, "-", 2)[,1] %>% str_squish())),
       home_score = suppressWarnings(as.numeric(str_split_fixed(X1, "-", 2)[,2] %>% str_squish())),
       point_won_by = str_extract(X2, "Point .+:") %>% str_remove("Point ") %>% str_remove(":") %>% str_remove(" \\(.+"),
