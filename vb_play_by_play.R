@@ -86,7 +86,7 @@ vb_play_by_play_ncaa2 <- function(pbp_url){
     return(NULL)
   }   ## return NULL if there are no sets in the file, I'm hoping this fixes the issues
   
-    teams <- str_split(sets$X1[1], "-") %>% unlist() %>% str_squish() %>% fix_NCAA_names()
+    teams <- str_split(sets$X1[1], "\\s-\\s") %>% unlist() %>% str_squish() %>% fix_NCAA_names()
   # Problem here: if team has hyphenated name, we may not get the correct split
   
   set_starters <- list(starters_away = character((length(game_info) - 2)),
