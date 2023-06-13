@@ -13,9 +13,10 @@ fix_NCAA_names <- function(x){
             x == "Gardner" ~ "Gardner-Webb",
             x == "St. Johns" ~ "St. John's (NY)",
             x == "William Mary" ~ "William & Mary",
-            x == "Bethune" ~ "Bethune-Cookman",
+            x == "Bethune" | x == "Cookman" ~ "Bethune-Cookman",
             x == "Saint Francis" ~ "Saint Francis (PA)",
             x == "Saint Peters" ~ "Saint Peter's",
+            x == "Houston Baptist" ~ "Houston Christian",
             TRUE ~ x)
 }
 

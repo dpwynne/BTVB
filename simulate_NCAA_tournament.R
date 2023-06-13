@@ -3,14 +3,28 @@ library(readr)
 library(volleysim)
 
 NCAA_tournament_teams <- read_csv("NCAA_tournament_2021b.csv")
-
+NCAA_tournament_16 <- read_csv("NCAA_tournament_2021_16.csv")
 ## Import ratings file
-ratings <- read_csv("ratings_2021-11-28.csv")
+ratings <- read_csv("ratings_2021-11-28_stivrins.csv")
 
 serve_tournament <- ratings %>% filter(Team %in% NCAA_tournament_teams$Team | Team %in% c("Serve Adjustment", "Home Court Adjustment", "Scaling Factor"))
 
 serve_adj2 <- serve_tournament$Rating_Raw[65]
 serve_hc <- serve_tournament$Rating_Raw[66]
+
+#serve_tournament <- serve_tournament %>% mutate(Rating_Raw = if_else(Team == "Nebraska", ratings$Rating_Raw[which(ratings$Team == "Nebraska Stivrins Injured")], Rating_Raw))
+
+# Replace teams outside sweet 16 who lost with highly negative rating
+#serve_tournament <- serve_tournament %>% mutate(Rating_Raw = if_else(Team %in% NCAA_tournament_16$Team, Rating_Raw, -1))
+
+#serve_tournament <- serve_tournament %>% mutate(Rating_Raw = if_else(Team %in% c("Louisville", "Texas", "Pittsburgh", "Wisconsin", "Minnesota", "Purdue", "Nebraska", "Georgia Tech"),
+#                                                                       Rating_Raw, -1))
+
+serve_tournament <- serve_tournament %>% mutate(Rating_Raw = if_else(Team %in% c("Louisville", "Pittsburgh", "Wisconsin", "Nebraska"),
+                                                                       Rating_Raw, -1))
+
+serve_tournament <- serve_tournament %>% mutate(Rating_Raw = if_else(Team %in% c("Wisconsin", "Nebraska"),
+                                                                     Rating_Raw, -1))
 
 predict_game <- function(home_sideout,away_sideout){
   game_tribble <- tibble::tribble(
@@ -274,6 +288,45 @@ tourney_df <- round6_opp %>% select(Team, Seed, r1_win, r2_win, r3_win, r4_win, 
          `Final Four` = r4_win,
          `Championship Game` = r5_win,
          `National Champion` = r6_win) %>%
+  arrange(desc(`National Champion`))
+
+write_csv(tourney_df, tourney_filename)
+
+
+tournament_prediction_date <- "2021-12-06"
+tourney_filename <- paste0("tournament_predictions_", tournament_prediction_date, "_updated_ratings.csv")
+
+tourney_df <- round6_opp %>% select(Team, Seed, r3_win, r4_win, r5_win, r6_win) %>%
+  rename(`Elite Eight` = r3_win,
+         `Final Four` = r4_win,
+         `Championship Game` = r5_win,
+         `National Champion` = r6_win) %>%
+  filter(Team %in% NCAA_tournament_16$Team) %>%
+  arrange(desc(`National Champion`))
+
+write_csv(tourney_df, tourney_filename)
+
+tournament_prediction_date <- "2021-12-10"
+tourney_filename <- paste0("tournament_predictions_", tournament_prediction_date, "_updated_ratings.csv")
+
+tourney_df <- round6_opp %>% select(Team, Seed, r4_win, r5_win, r6_win) %>%
+  filter(Team %in% c("Louisville", "Texas", "Pittsburgh", "Wisconsin", "Minnesota", "Purdue", "Nebraska", "Georgia Tech")) %>%
+  rename(`Final Four` = r4_win,
+         `Championship Game` = r5_win,
+         `National Champion` = r6_win) %>%
+  filter(Team %in% NCAA_tournament_16$Team) %>%
+  arrange(desc(`National Champion`))
+
+write_csv(tourney_df, tourney_filename)
+
+tournament_prediction_date <- "2021-12-12"
+tourney_filename <- paste0("tournament_predictions_", tournament_prediction_date, "_updated_ratings.csv")
+
+tourney_df <- round6_opp %>% select(Team, Seed, r5_win, r6_win) %>%
+  filter(Team %in% c("Louisville", "Nebraska", "Pittsburgh", "Wisconsin")) %>%
+  rename(`Championship Game` = r5_win,
+         `National Champion` = r6_win) %>%
+  filter(Team %in% c("Louisville", "Nebraska", "Pittsburgh", "Wisconsin")) %>%
   arrange(desc(`National Champion`))
 
 write_csv(tourney_df, tourney_filename)
